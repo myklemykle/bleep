@@ -51,6 +51,7 @@ AudioConnection          patchCord5(mixer1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=954,312
 // GUItool: end automatically generated code
 
+static int maxEnvelopeTime = 50; // ms
 
 const int ledPin = 13;
 
@@ -72,17 +73,17 @@ float mtof(int midival)
 }
 
 //////
-// How to turn a midi CC integer 0-127 into a number of miliseconds?
-// let's have it be exponential between 0 and some higher value.
+// How to turn a midi CC integer 0-127 into a arbitrarily large number of miliseconds?
+// let's have it be exponential between 0 and some higest value.
 
 int ccToMs(byte midival, int maxMs){
   return maxMs * midival * midival / 16129; // 127^2
 }
 
 void OnNoteOn (byte channel, byte note, byte velocity) {
-    digitalWrite(ledPin, HIGH);   // set the LED on
-
-	  Serial.print("Note On, ch=");
+  digitalWrite(ledPin, HIGH);   // set the LED on
+  
+  Serial.print("Note On, ch=");
   Serial.print(channel, DEC);
   Serial.print(", note=");
   Serial.print(note, DEC);
@@ -92,7 +93,7 @@ void OnNoteOn (byte channel, byte note, byte velocity) {
   
   AudioNoInterrupts();
   waveform1.frequency(mtof(note));
-// fix a click?
+// fix a click?  nope, still clicks.
   waveform1.phase(0);
   waveform1.amplitude((float)velocity / 127);
   envelope1.noteOn();
@@ -107,14 +108,7 @@ void OnNoteOff (byte channel, byte note, byte velocity) {
 
 void OnControlChange(byte channel, byte control, byte value) {
   int tempMs;
-  
-    Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
+
 
    switch(control) {
       case 1: 
@@ -144,32 +138,58 @@ void OnControlChange(byte channel, byte control, byte value) {
         }
       break;
       
+      case 14: // (0,2,0)
+      break;
+      
+      case 15: // (0,3,0)
+        // max envelope time (multiplier for AD&R) -- from 100 to 12800
+        maxEnvelopeTime = (value + 1) * 100;
+        Serial.print("max envelope time: ");
+        Serial.println(maxEnvelopeTime, DEC);
+      break;
+      
       // 16-19: second row (1, 0-3, 0) -- ADSR
       case 16: 
-        tempMs = ccToMs(value, 50);
+        tempMs = ccToMs(value, maxEnvelopeTime);
+        Serial.print("attack: ");
         Serial.print(tempMs, DEC);
-        Serial.println();
+        Serial.println(" ms");
         envelope1.attack(tempMs);
       break;
       
       case 17: 
-        tempMs = ccToMs(value, 50);
+        tempMs = ccToMs(value, maxEnvelopeTime);
+        Serial.print("decay: ");
         Serial.print(tempMs, DEC);
-        Serial.println();
+        Serial.println(" ms");
         envelope1.decay(tempMs);
       break;
       
        case 18: 
-        envelope1.sustain((float) value / 127);
+       Serial.print("sustain: ");
+       Serial.print((float) value/127);
+       Serial.println();
+       envelope1.sustain((float) value / 127);
       break;
       
       case 19: 
-        tempMs = ccToMs(value, 50);
+        tempMs = ccToMs(value, maxEnvelopeTime);
+        Serial.print("release: ");
         Serial.print(tempMs, DEC);
-        Serial.println();
+        Serial.println(" ms");
         envelope1.release(tempMs);
       break;
       
+      default: 
+        
+  Serial.print("Control Change, ch=");
+  Serial.print(channel, DEC);
+  Serial.print(", control=");
+  Serial.print(control, DEC);
+  Serial.print(", value=");
+  Serial.print(value, DEC);
+  Serial.println();
+      break; 
          /*      
       case 2: bendRange = map(value, 0, 127, 1, 12); 
       // CC2 sets the global bend range between 1 and 12.
@@ -268,7 +288,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   
   Serial.begin(115200);
-  Serial.print('hi');
+  Serial.print("hi");
 
   AudioMemory(12); // must actually check this later, hmm ...
 
@@ -298,8 +318,7 @@ void setup() {
 	delay(200);
 	waveform1.amplitude(0);
 
-  Serial.print(' there.');
-  Serial.println();
+  Serial.println(" there.");
 }
 
 
