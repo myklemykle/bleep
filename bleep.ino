@@ -118,22 +118,29 @@ void OnControlChange(byte channel, byte control, byte value) {
       case 3: // top left in bank 0 (0,0,0) of knobs
         // overall gain
         mixer1.gain(0, (float)value/127);
+        Serial.print("gain: ");
+        Serial.println((float)value/127);
       break;
       
       case 9: // one to the right (0,1,0)
         // waveform
+        Serial.print("waveform: ");
         switch(value & 3) {
           case 0: 
             waveform1.begin(WAVEFORM_SINE);
+            Serial.println("sine");
           break;
           case 1: 
             waveform1.begin(WAVEFORM_SAWTOOTH);
+            Serial.println("sawtooth");
           break;
           case 2: 
             waveform1.begin(WAVEFORM_SQUARE);
+            Serial.println("square");
           break;
           case 3: 
             waveform1.begin(WAVEFORM_TRIANGLE);
+            Serial.println("triangle");
           break;
         }
       break;
@@ -181,97 +188,31 @@ void OnControlChange(byte channel, byte control, byte value) {
       break;
       
       default: 
-        
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
+        Serial.print("Control Change, ch=");
+        Serial.print(channel, DEC);
+        Serial.print(", control=");
+        Serial.print(control, DEC);
+        Serial.print(", value=");
+        Serial.print(value, DEC);
+        Serial.println();
       break; 
          /*      
       case 2: bendRange = map(value, 0, 127, 1, 12); 
       // CC2 sets the global bend range between 1 and 12.
       break;
-      
-      case 3: 
-      // CC3, which controls different things for different oscillators, 
-      // type of vibrato on channel 2.
-         switch (channel){
-            case 1: ch1_Oscillator(7, 0, 0, 0, value);
-            break;
-            case 2: ch2_Oscillator(7, 0, 0, 0, value);
-            break;
-            case 3: ch3_Oscillator(7, 0, 0, 0, value);
-            break;
-            case 4: ch4_Oscillator(7, 0, 0, 0, value);
-            break;
-            case 6: mainWaveformEngine(7, 0, 0, 0, value);
-            break;
-         }
-      break;
    
       case 4: // CC4, which turns on the Arpeggiator for that channel.
-         switch (channel){
-            case 1: ch1_Arpeggiator(4, value);
-            break;
-            case 2: ch2_Arpeggiator(4, value);
-            break;
-            case 3: ch3_Arpeggiator(4, value);
-            break;
-            case 4: ch4_Arpeggiator(4, value);
-            break;
-            case 6: waveform_Arpeggiator(4, value);
-            break;
-         } 
       break;
 
       case 5: // CC5, which controls the Arpeggiator Speed.
-         switch (channel){
-            case 1: ch1_Arpeggiator(10, value);
-            break;
-            case 2: ch2_Arpeggiator(10, value);
-            break;
-            case 3: ch3_Arpeggiator(10, value);
-            break;
-            case 4: ch4_Arpeggiator(10, value);
-            break;
-            case 6: waveform_Arpeggiator(10, value);
-            break;
-         }
       break;
 
       case 6: 
       // CC6, which controls the polypulse on channel 2, 
       // and PWM Follower on channel 1.
-         switch (channel){
-            case 1: ch1_Oscillator(9, 0, 0, 0, value);
-            break;
-            case 2: ch2_Oscillator(9, 0, 0, 0, value);
-            break;
-            case 3: ch3_Oscillator(9, 0, 0, 0, value);
-            break;
-            case 4: ch4_Oscillator(9, 0, 0, 0, value);
-            break;
-            case 6: mainWaveformEngine(9, 0, 0, 0, value);
-            break;
-         }
       break;
 
       case 20: //CC20, which controls the portamento speed.
-         switch (channel){
-            case 1: ch1_Oscillator(12, 0, 0, 0, value);
-            break;
-            case 2: ch2_Oscillator(12, 0, 0, 0, value);
-            break;
-            case 3: ch3_Oscillator(12, 0, 0, 0, value);
-            break;
-            case 4: ch4_Oscillator(12, 0, 0, 0, value);
-            break;
-            case 6: mainWaveformEngine(12, 0, 0, 0, value);
-            break;
-         }
       break;
    */
    }
