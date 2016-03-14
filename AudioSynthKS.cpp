@@ -11,6 +11,11 @@ void AudioSynthKS::update(void){
 	block = allocate(); 
 	if (block == NULL) return;
 
+	// If buflen has been reduced by a wavelength change & cursor is now outside of bounds, reposition cursor.
+	while (cursor >= buflen) {
+		cursor -= buflen;
+	}
+
 	if (triggering) {
 		// We've just been asked to excite our buffer 
 		triggering = false;
@@ -28,27 +33,26 @@ void AudioSynthKS::update(void){
 			release(block);
 			return; //DEBUG
 		}
-	} else {  // DEBUG
-		excitement = NULL;
 	}
 
 	for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
-		//if (triggered) {
-		if (excitement != NULL) {
-			block->data[i] = buffer[cursorPlus(i)] = excitement->data[i];
-			//block->data[i] = excitement->data[i];
+		if (triggered) {
+			block->data[i] = buffer[cursor] = excitement->data[i];
 		} else {
 			// K/S algorithm at its simplest:
 			// load the cursor sample & the one just behind it
-			s0 = buffer[cursorPlus(i)];
-			s1 = buffer[i == 0 ? cursorMinus(1) : cursorPlus(i-1)];
-			//
+			s0 = buffer[cursor];
+			s1 = buffer[cursorMinus(1)];
+
 			// average them (comb filter),
 			// place the result in the output and in the buffer.
-			block->data[i] = buffer[cursorPlus(i)] = ((s0 + s1) / 2);
+			block->data[i] = buffer[cursor] = ((s0 + s1) / 2);
 		}
 
-		incCursor();
+		// increment cursor
+		if (++cursor == buflen) {
+			cursor = 0;
+		}
 		if (cursor == triggerPoint) {
 			triggered = false;
 		}

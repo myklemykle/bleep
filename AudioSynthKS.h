@@ -21,6 +21,8 @@ public:
 				// The actual buffer is larger than we need.  This sets the number of samples we need.
 				void wavelength(uint32_t w){
 					if (w <= BUFSIZE) {
+						Serial.print("ks buflen:");
+						Serial.println(w, DEC);
 						buflen = w;
 					} else {
 						Serial.println("error: KS buffer too small for that wavelength");

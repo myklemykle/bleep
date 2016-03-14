@@ -5,7 +5,8 @@
 #include "AudioSynthKS.h"
 
 // GUItool: begin automatically generated code
-AudioSynthNoisePink      pink1;          //xy=110,287  // tested with different noises ... no difference
+//AudioSynthNoisePink      pink1;          //xy=110,287  // if there's a difference for KS between pink & white noise, it's pretty subtle ...
+AudioSynthNoiseWhite      pink1;          //xy=110,287  
 AudioSynthKS 				     ks1; 
 AudioSynthBytebeat       bytebeat1; 
 AudioSynthWaveform       waveform1;      //xy=73,47
@@ -17,8 +18,7 @@ AudioMixer4              mixer1;         //xy=712,33
 AudioConnection          patchCord2(waveform1, 0, mixer2, 0);
 AudioConnection          patchCord3(bytebeat1, 0, mixer2, 1);
 AudioConnection          patchCord1(pink1, 0, ks1, 0);
-//AudioConnection          patchCord4(ks1, 0, mixer2, 2);
-AudioConnection          patchCord4(ks1, 0, mixer1, 2);
+AudioConnection          patchCord4(ks1, 0, mixer2, 2);
 AudioConnection          patchCord5(mixer2, envelope1);
 AudioConnection          patchCord6(envelope1, biquad1);
 AudioConnection          patchCord7(biquad1, 0, mixer1, 0);
@@ -354,7 +354,6 @@ void setup() {
 	pinMode(ledPin, OUTPUT);
 	
 	Serial.begin(115200);
-	Serial.print("hi");
 
 	AudioMemory(24); // must actually check this later, hmm ...
 
@@ -382,15 +381,16 @@ void setup() {
 	//waveform1.set_ramp_length(10); // ten sample ramp in/out
 	waveform1.begin(WAVEFORM_SINE); // can this be called twice?
 
-// beep?
-	waveform1.amplitude(0.5);
-				envelope1.noteOn();
-	delay(100);
-	waveform1.amplitude(0);
-
 	pink1.amplitude(1.0);
 	ks1.clear();
 
+// beep at startup:
+	waveform1.amplitude(0.5);
+	envelope1.noteOn();
+	delay(100);
+	waveform1.amplitude(0);
+
+	Serial.print("hi");
 	Serial.println(" there.");
 }
 
