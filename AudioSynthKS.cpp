@@ -42,27 +42,22 @@ void AudioSynthKS::update(void){
 		} else {
 			// K/S algorithm at its simplest:
 			// load the cursor sample & the one just behind it
-			//s0 = buffer[cursor];
 			s0 = buffer[cursorMinus(1)];
 
-			//s1 = buffer[cursorMinus(1)];
-			s1 = buffer[cursorMinus(buflen + 1)];
+			s1 = buffer[cursorMinus(buflen)];
+			// This throws a single sample of random bugnoise into the tube ... which ends up sounding kind of nice
+			//s1 = buffer[cursorMinus(buflen + 1)];
 
-			s2 = buffer[cursorMinus(magic1 + 1)];
+			//s2 = buffer[cursorMinus(magic1)];
 
 			// average them (comb filter),
 			// place the result in the output and in the buffer.
-			//
-			// this was part of a bug that ended up sounding kind of awesome:
-			//block->data[i] = buffer[cursorPlus(i)] = ((s0 + s1) / 2);
-			//
 			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); // average of the two samples
+			//block->data[i] = buffer[cursor] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
 
+			// three way version:
 			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); 
 			//block->data[i] = buffer[cursor] = ((s0 + s1 + s2) / 3); 
-
-
-			//block->data[i] = buffer[cursorPlus(buflen)] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
 		}
 
 		// increment cursor
