@@ -27,6 +27,9 @@ public:
 					} else {
 						Serial.println("error: KS buffer too small for that wavelength");
 					}
+					magic1 = (float)buflen / 3.1416;
+					Serial.print("magic1 = ");
+					Serial.println(magic1, DEC);
 				};
 
 				void start(void){
@@ -38,7 +41,7 @@ public:
 				};
 
 				void clear(void){
-					int i;
+					unsigned int i;
 					for (i=0; i<buflen; i++){
 						buffer[i]=0;
 					}
@@ -47,5 +50,5 @@ private:
 				audio_block_t *inputQueueArray[1];
 				int16_t buffer[BUFSIZE];
 				bool triggering, triggered, running;
-				uint32_t triggerPoint, cursor, buflen;
+				uint32_t triggerPoint, cursor, buflen, magic1;
 };

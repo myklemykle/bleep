@@ -3,8 +3,9 @@
 void AudioSynthKS::update(void){
 
 	audio_block_t *block, *excitement;
-	int16_t s0, s1; 
+	int16_t s0, s1, s2; 
 	int i;
+	int magic1;
 
 	if (!running) return;
 
@@ -12,9 +13,9 @@ void AudioSynthKS::update(void){
 	if (block == NULL) return;
 
 	// If buflen has been reduced by a wavelength change & cursor is now outside of bounds, reposition cursor.
-	while (cursor >= buflen) {
-		cursor -= buflen;
-	}
+//	while (cursor >= buflen) {
+//		cursor -= buflen;
+//	}
 
 	if (triggering) {
 		// We've just been asked to excite our buffer 
@@ -42,15 +43,24 @@ void AudioSynthKS::update(void){
 			// K/S algorithm at its simplest:
 			// load the cursor sample & the one just behind it
 			s0 = buffer[cursor];
-			s1 = buffer[cursorMinus(1)];
+			//s1 = buffer[cursorMinus(1)];
+			s1 = buffer[cursorMinus(buflen)];
+			//s2 = buffer[cursorMinus(magic1)];
 
 			// average them (comb filter),
 			// place the result in the output and in the buffer.
-			block->data[i] = buffer[cursor] = ((s0 + s1) / 2);
+			//
+			// this was part of a bug that ended up sounding kind of awesome:
+			//block->data[i] = buffer[cursorPlus(i)] = ((s0 + s1) / 2);
+			//
+			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); // average of the two samples
+
+			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); // not so magic?
+			//block->data[i] = buffer[cursor] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
 		}
 
 		// increment cursor
-		if (++cursor == buflen) {
+		if (++cursor == BUFSIZE) {
 			cursor = 0;
 		}
 		if (cursor == triggerPoint) {
