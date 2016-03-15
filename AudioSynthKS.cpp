@@ -21,7 +21,7 @@ void AudioSynthKS::update(void){
 		// We've just been asked to excite our buffer 
 		triggering = false;
 		triggered = true;
-		triggerPoint = cursor;
+		triggerPoint = cursorPlus(buflen);
 		Serial.print("triggerPoint: ");
 		Serial.println(triggerPoint, DEC);
 	}
@@ -38,7 +38,7 @@ void AudioSynthKS::update(void){
 
 	for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 		if (triggered) {
-			block->data[i] = buffer[cursor] = excitement->data[i];
+			block->data[i] = buffer[cursorPlus(buflen)] = excitement->data[i];
 		} else {
 			// K/S algorithm at its simplest:
 			// load the cursor sample & the one just behind it
@@ -53,10 +53,10 @@ void AudioSynthKS::update(void){
 			// this was part of a bug that ended up sounding kind of awesome:
 			//block->data[i] = buffer[cursorPlus(i)] = ((s0 + s1) / 2);
 			//
-			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); // average of the two samples
+			//block->data[i] = buffer[cursorPlus(buflen)] = ((s0 + s1) / 2); // average of the two samples
 
 			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); // not so magic?
-			//block->data[i] = buffer[cursor] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
+			block->data[i] = buffer[cursor] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
 		}
 
 		// increment cursor

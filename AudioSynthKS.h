@@ -2,14 +2,14 @@
 
 #define BUFSIZE 128*32 // probably too large ... TODO calculate the max size, for the lowest audible freq.
 
-#define cursorMinus(number) (number > cursor) ? cursor + buflen - number : cursor - number
-#define cursorPlus(number) (number + cursor >= buflen) ? cursor + number - buflen : cursor + number
-#define incCursor() if (++cursor >= buflen) { cursor = 0; }
+#define cursorMinus(number) (number > cursor) ? cursor + BUFSIZE - number : cursor - number
+#define cursorPlus(number) (number + cursor >= BUFSIZE) ? cursor + number - BUFSIZE : cursor + number
+#define incCursor() if (++cursor >= BUFSIZE) { cursor = 0; }
 
 class AudioSynthKS : public AudioStream
 {
 public:
-        AudioSynthKS() : AudioStream(1, inputQueueArray), triggering(false), triggered(false), running(false), cursor(0) {}
+        AudioSynthKS() : AudioStream(1, inputQueueArray), triggering(false), triggered(false), running(false), cursor(0), buflen(0), magic1(0) {}
 
         virtual void update(void);
 
@@ -42,7 +42,7 @@ public:
 
 				void clear(void){
 					unsigned int i;
-					for (i=0; i<buflen; i++){
+					for (i=0; i<BUFSIZE; i++){
 						buffer[i]=0;
 					}
 				};
