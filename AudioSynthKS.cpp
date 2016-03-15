@@ -38,14 +38,17 @@ void AudioSynthKS::update(void){
 
 	for (i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 		if (triggered) {
-			block->data[i] = buffer[cursorPlus(buflen)] = excitement->data[i];
+			block->data[i] = buffer[cursor] = excitement->data[i];
 		} else {
 			// K/S algorithm at its simplest:
 			// load the cursor sample & the one just behind it
-			s0 = buffer[cursor];
+			//s0 = buffer[cursor];
+			s0 = buffer[cursorMinus(1)];
+
 			//s1 = buffer[cursorMinus(1)];
-			s1 = buffer[cursorMinus(buflen)];
-			//s2 = buffer[cursorMinus(magic1)];
+			s1 = buffer[cursorMinus(buflen + 1)];
+
+			s2 = buffer[cursorMinus(magic1 + 1)];
 
 			// average them (comb filter),
 			// place the result in the output and in the buffer.
@@ -53,10 +56,13 @@ void AudioSynthKS::update(void){
 			// this was part of a bug that ended up sounding kind of awesome:
 			//block->data[i] = buffer[cursorPlus(i)] = ((s0 + s1) / 2);
 			//
-			//block->data[i] = buffer[cursorPlus(buflen)] = ((s0 + s1) / 2); // average of the two samples
+			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); // average of the two samples
 
-			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); // not so magic?
-			block->data[i] = buffer[cursor] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
+			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); 
+			//block->data[i] = buffer[cursor] = ((s0 + s1 + s2) / 3); 
+
+
+			//block->data[i] = buffer[cursorPlus(buflen)] = ((s0 + s1) / 2) - buffer[cursor]; // diff between average & original ... drops an octave??
 		}
 
 		// increment cursor

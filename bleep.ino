@@ -20,8 +20,9 @@ AudioConnection          patchCord3(bytebeat1, 0, mixer2, 1);
 AudioConnection          patchCord1(pink1, 0, ks1, 0);
 AudioConnection          patchCord4(ks1, 0, mixer2, 2);
 AudioConnection          patchCord5(mixer2, envelope1);
-AudioConnection          patchCord6(envelope1, biquad1);
-AudioConnection          patchCord7(biquad1, 0, mixer1, 0);
+//AudioConnection          patchCord6(envelope1, biquad1);
+//AudioConnection          patchCord7(biquad1, 0, mixer1, 0);
+AudioConnection          patchCord6(envelope1, 0, mixer1, 0);
 AudioConnection          patchCord8(mixer1, 0, i2s1, 0);
 AudioConnection          patchCord9(mixer1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=878,163
