@@ -5,8 +5,9 @@
 #include "AudioSynthKS.h"
 
 // GUItool: begin automatically generated code
-//AudioSynthNoisePink      pink1;          //xy=110,287  // if there's a difference for KS between pink & white noise, it's pretty subtle ...
-AudioSynthNoiseWhite      pink1;          //xy=110,287  
+AudioSynthNoisePink      pink1;          //xy=110,287   // pink noise gives a bit less aggressive bite to the notes ... 
+																												// less high freq. presence in general i guess.
+//AudioSynthNoiseWhite      pink1;          //xy=110,287  
 AudioSynthKS 				     ks1; 
 AudioSynthBytebeat       bytebeat1; 
 AudioSynthWaveform       waveform1;      //xy=73,47

@@ -27,7 +27,7 @@ public:
 					} else {
 						Serial.println("error: KS buffer too small for that wavelength");
 					}
-					magic1 = (float)buflen / 3.1416;
+					magic1 = (float)buflen / (3.1416 * 2);
 					Serial.print("magic1 = ");
 					Serial.println(magic1, DEC);
 				};
