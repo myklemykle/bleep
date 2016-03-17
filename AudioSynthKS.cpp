@@ -44,7 +44,7 @@ void AudioSynthKS::update(void){
 			// load the cursor sample & the one just behind it
 			// (In our travelling-buffer implementation, cursor-buflen == cursor)
 			s0 = buffer[cursorMinus(1)];
-			s1 = buffer[cursorMinus(buflen)];
+			s1 = buffer[cursorMinus(buflen)]; 
 
 			// TODO: put a knob on this bug:
 			// Overshooting the beginning of the buffer throws tiny specs of random bugnoise into the tube ... which ends up sounding kind of nice
@@ -64,9 +64,21 @@ void AudioSynthKS::update(void){
 			// place the result in the output and in the buffer.
 			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); 
 
+			// This ought to do the same thing, but it causes noise and crashes ... wtf?
+			//block->data[i] = buffer[cursor] = int((s0 + s1) * 0.5); 
+
 			// Other things we could do instead:
-			// If we subtract instead of adding, the whole thing drops an octave & also sounds slightly more lowpass filtered ... why?
-			//block->data[i] = buffer[cursor] = ((s0 - s1) / 2); 
+			// If we subtract instead of adding, the whole thing drops an octave & also sounds slightly more lowpass filtered ... 
+			// I believe the octave thing is because the entire waveform is inverted on every pass, so it becomes a half-wave.
+			// The filter thing may be math rounding issues or similar ... otherwise i don't know.  At any rate, this does sound nice.
+			// TODO: my kingdom for a 'scope ...
+			// block->data[i] = buffer[cursor] = ((s0 - s1) / 2); 
+			
+			// Here's the same thing redrawn in the more 'general' form of a digital comb filter: 
+			// (feedbackGain * buffer[cursor - feedbackDistance]) + (feedforwardGain * buffer[cursor + feedforwardDistance])
+			// (with feedforwardDistance = 0, feedbackDistance = 1, and both gains at 0.5.
+			// block->data[i] = buffer[cursor] = int( (0.5 * buffer[cursorMinus(1)]) + (0.5 * buffer[cursorMinus(buflen + 0)]));
+			// much obliged: https://www.dsprelated.com/freebooks/filters/Analysis_Digital_Comb_Filter.html
 
 			// three element version:
 			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1 + s2) / 3); 

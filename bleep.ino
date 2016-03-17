@@ -110,7 +110,7 @@ void OnNoteOn (byte channel, byte note, byte velocity) {
 	Serial.println();
 	
 	noteAmpl = (float)velocity / 127;
-	Serial.println(noteAmpl, DEC);
+	//Serial.println(noteAmpl, DEC);
 
 	AudioNoInterrupts();
 	if (waveType == 4) { 
