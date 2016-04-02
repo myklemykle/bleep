@@ -29,10 +29,87 @@ AudioConnection          patchCord9(mixer1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=878,163
 // GUItool: end automatically generated code
 
+////////////////////////////
+// Parameters:
+// NOTE: this is screaming for a typedef instead of a bunch of parallel arrays.
+// NOTE: for all of those arrays, we are counting on the compiler to initialize the values to NULL/0.
+////////////////////////////
 
-static int maxEnvelopeTime = 50; // ms
-static float noteAmpl = 0;
-static uint8_t waveType = 5;
+// Max # of parameters
+#define MAXPARAMETERS 256
+
+// type of raw parameters: -128 to 127
+typedef int8_t Parameter;
+
+// Parameter memory:
+static Parameter params[MAXPARAMETERS];
+
+// Paramter update functions;
+typedef void (*ParamUpdater)();
+ParamUpdater paramUpdaters[MAXPARAMETERS];
+
+// Midi controller -> parameter map:
+uint8_t midi2param[MAXPARAMETERS];
+
+// Indices of paramters (arbitrary, defined here only):
+//http://stackoverflow.com/questions/10091825/constant-pointer-vs-pointer-on-a-constant-value
+const unsigned int waveType 				= 1;
+const unsigned int noteAmpl 				= 2;
+const unsigned int bytebeatRecipe  = 3;
+const unsigned int mixer1gain0     = 4;
+const unsigned int maxEnvelopeTime = 5;
+
+// Definitions of parameters:
+#define MAXENVELOPETIME (params[maxEnvelopeTime] + 1) * 100
+#define WAVETYPE (params[waveType] % 6)
+#define NOTEAMPL (float)params[noteAmpl] / 127
+#define BYTEBEATRECIPE params[bytebeatRecipe]
+#define MIXER1GAIN0 (float)params[mixer1gain0] / 127
+
+// Setting a parameter:
+void setParam(int pIndex, Parameter val){
+	Serial.print("setting parameter ");
+	Serial.print(pIndex, DEC);
+	Serial.print(" to ");
+	Serial.println(val, DEC);
+	params[pIndex] = val;
+	if (paramUpdaters[pIndex] != NULL) {
+		paramUpdaters[pIndex]();
+	}
+}
+
+// Setting a param from a midi controller message, thru the map:
+void setParamFromMidi(int controller, Parameter val){
+	// midi2param is a one->many map so we have to check it all, ugh.
+	int i;
+
+	for (i=0; i<MAXPARAMETERS; i++){
+		if(midi2param[i] == controller) {
+			setParam(i, val);
+		}
+	}
+}
+
+// Initialization of parameters:
+void initParams(){
+	// Parameter updaters:
+	paramUpdaters[bytebeatRecipe] = [](){ bytebeat1.setRecipe(BYTEBEATRECIPE); };
+	paramUpdaters[mixer1gain0] = [](){ mixer1.gain(0, MIXER1GAIN0); };
+
+	// midi->parameter mapping:
+	midi2param[bytebeatRecipe] = 18;
+
+	// initialize parameters & run updates:
+	setParam(maxEnvelopeTime, 10);
+	setParam(waveType, 5);
+	setParam(noteAmpl, 0);
+	setParam(mixer1gain0, 127);
+}
+
+
+//////////////////////
+//// Constants:
+//////////////////////
 const int waveformTypes[4] = { WAVEFORM_SINE, WAVEFORM_SAWTOOTH, WAVEFORM_SQUARE, WAVEFORM_TRIANGLE};
 const int ledPin = 13;
 
@@ -109,25 +186,25 @@ void OnNoteOn (byte channel, byte note, byte velocity) {
 	Serial.print(velocity, DEC);
 	Serial.println();
 	
-	noteAmpl = (float)velocity / 127;
-	//Serial.println(noteAmpl, DEC);
+	setParam(noteAmpl, velocity);
+	Serial.println(NOTEAMPL, DEC);
 
 	AudioNoInterrupts();
-	if (waveType == 4) { 
+	if (WAVETYPE == 4) { 
 		// bb mode
 		bytebeat1.time(0);
-		mixer2.gain(1,noteAmpl); 
+		mixer2.gain(1,NOTEAMPL); 
 		bytebeat1.start();
-	} else if (waveType == 5) { 
+	} else if (WAVETYPE == 5) { 
 		// ks mode
-		//mixer2.gain(2,noteAmpl);
+		//mixer2.gain(2,NOTEAMPL);
 		mixer2.gain(2,1); // TESTING ...
 		ks1.wavelength(AUDIO_SAMPLE_RATE / ccToFreq(note));
 		ks1.trigger();
 	} else { 
 		// wave mode
 		waveform1.frequency(ccToFreq(note));
-		waveform1.amplitude(noteAmpl);
+		waveform1.amplitude(NOTEAMPL);
 		mixer2.gain(0,1);
 	}
 	envelope1.noteOn();
@@ -156,22 +233,18 @@ void OnControlChange(byte channel, byte control, byte value) {
 // Work out how to use relative/continuous controllers instead of absolute?
 
 	switch(control) {
-		case 1: 
-			bytebeat1.setRecipe(value);
-			Serial.println("bytebeat change");
-		break;
 			
 		case 7: // channel volume
-			mixer1.gain(0, (float)value/127);
-			mixer1.gain(2, (float)value/127); // DEBUG
+			setParam(mixer1gain0, value);
 			Serial.print("gain: ");
-			Serial.println((float)value/127);
+			Serial.println(MIXER1GAIN0);
 		break;
 		
 		case 114: // waveform / preset / bank select
-			waveType = (value % 6);
+			//waveType = (value % 6);
+			setParam(waveType, value);
 			Serial.print("waveform: ");
-			switch(waveType) {
+			switch(WAVETYPE) {
 				case 0: 
 					Serial.println("sine");
 				break;
@@ -194,13 +267,13 @@ void OnControlChange(byte channel, byte control, byte value) {
 
 			AudioNoInterrupts();
 			// switch between generators:
-			switch(waveType) {
+			switch(WAVETYPE) {
 				case 0:
 				case 1:
 				case 2:
 				case 3:
-					waveform1.begin(waveformTypes[waveType]);
-					waveform1.amplitude(noteAmpl); // control waveform1 gain by amplitude()
+					waveform1.begin(waveformTypes[WAVETYPE]);
+					waveform1.amplitude(NOTEAMPL); // control waveform1 gain by amplitude()
 					mixer2.gain(0,1); // gain is already adjusted, mix at unity
 
 					bytebeat1.stop();
@@ -210,7 +283,7 @@ void OnControlChange(byte channel, byte control, byte value) {
 
 				break;
 				case 4:
-					mixer2.gain(1,noteAmpl); // control bb gain with mixer
+					mixer2.gain(1,NOTEAMPL); // control bb gain with mixer
 					
 					waveform1.amplitude(0);
 					ks1.stop();
@@ -219,7 +292,7 @@ void OnControlChange(byte channel, byte control, byte value) {
 
 				break;
 				case 5:
-					mixer2.gain(2,noteAmpl); // control ks gain with mixer
+					mixer2.gain(2,NOTEAMPL); // control ks gain with mixer
 
 					bytebeat1.stop();
 					waveform1.amplitude(0);
@@ -233,8 +306,8 @@ void OnControlChange(byte channel, byte control, byte value) {
 		break;
 		
 		case 18: // param 1 
-			bytebeat1.setRecipe(value);
-			Serial.println("bytebeat change");
+			setParamFromMidi(18, value);
+			Serial.println("bytebeat change (18)");
 		break;
 
 		// filter stuff:
@@ -276,13 +349,14 @@ void OnControlChange(byte channel, byte control, byte value) {
 		
 		case 91: // something about time ... 
 			// max envelope time (multiplier for AD&R) -- from 100 to 12800
-			maxEnvelopeTime = (value + 1) * 100;
+			//MAXENVELOPETIME = (value + 1) * 100;
+			setParam(maxEnvelopeTime, value);
 			Serial.print("max envelope time: ");
-			Serial.println(maxEnvelopeTime, DEC);
+			Serial.println(MAXENVELOPETIME, DEC);
 		break;
 		
 		case 73: // attack
-			tempMs = ccToMs(value, maxEnvelopeTime);
+			tempMs = ccToMs(value, MAXENVELOPETIME);
 			Serial.print("attack: ");
 			Serial.print(tempMs, DEC);
 			Serial.println(" ms");
@@ -290,7 +364,7 @@ void OnControlChange(byte channel, byte control, byte value) {
 		break;
 		
 		case 75:  // decay
-			tempMs = ccToMs(value, maxEnvelopeTime);
+			tempMs = ccToMs(value, MAXENVELOPETIME);
 			Serial.print("decay: ");
 			Serial.print(tempMs, DEC);
 			Serial.println(" ms");
@@ -305,7 +379,7 @@ void OnControlChange(byte channel, byte control, byte value) {
 		break;
 		
 		case 72:  // release
-			tempMs = ccToMs(value, maxEnvelopeTime);
+			tempMs = ccToMs(value, MAXENVELOPETIME);
 			Serial.print("release: ");
 			Serial.print(tempMs, DEC);
 			Serial.println(" ms");
@@ -351,6 +425,8 @@ void OnControlChange(byte channel, byte control, byte value) {
 //////////////////////////////////////////
 
 void setup() {
+
+	initParams();
 	
 		// initialize the digital pin as an output.
 	pinMode(ledPin, OUTPUT);
@@ -360,7 +436,9 @@ void setup() {
 	AudioMemory(24); // must actually check this later, hmm ...
 
 	sgtl5000_1.enable(); 
-				sgtl5000_1.volume(0.6);
+	//sgtl5000_1.volume(0.6);
+	sgtl5000_1.volume(0.7);
+
 	// midi handlers:
 	usbMIDI.setHandleNoteOff(OnNoteOff);
 	usbMIDI.setHandleNoteOn(OnNoteOn) ;
@@ -370,12 +448,6 @@ void setup() {
 	// setup filter:
 	// Butterworth filter, 12 db/octave
 	biquad1.setLowpass(0, 800, 0.707);
-
-	// setup mixers:
-	mixer1.gain(0,1);
-	mixer1.gain(2,1);
-
-	// TODO: send simulated setup messages to configure current settings?
 
 	// start oscilator
 	waveform1.amplitude(0);
