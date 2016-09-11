@@ -40,7 +40,7 @@ int ccToMs(byte, int);
 
 ////////////////////////////
 // Parameters:
-// NOTE: this is screaming for a typedef instead of a bunch of parallel arrays.
+// NOTE: this is screaming for some kind of object encapsulation ...
 // NOTE: for all of those arrays, we are counting on the compiler to initialize the values to NULL/0.
 ////////////////////////////
 
@@ -61,17 +61,19 @@ typedef struct {
 
 // Indices of paramters (arbitrary, defined here only):
 //http://stackoverflow.com/questions/10091825/constant-pointer-vs-pointer-on-a-constant-value
-const unsigned int waveType 				= 1;
+const unsigned int maxEnvelopeTime	= 5;
 const unsigned int noteAmpl 				= 2;
 const unsigned int bytebeatRecipe 	= 3;
 const unsigned int mixer1gain0    	= 4;
-const unsigned int maxEnvelopeTime	= 5;
+const unsigned int waveType 				= 5;
 const unsigned int envelope1Attack  = 6;
 const unsigned int envelope1Decay   = 7;
 const unsigned int envelope1Sustain = 8;
 const unsigned int envelope1Release = 9;
+const unsigned int ksDecayMix       = 10;
+const unsigned int ksDrumness       = 11;
 
-// Definitions of parameters: (getting the 'cooked' value from the raw value)
+// Definitions of parameters: (getting the 'cooked' value from the raw (0-127) value)
 #define MAXENVELOPETIME (params[maxEnvelopeTime].raw + 1) * 100
 #define WAVETYPE (params[waveType].raw % 6)
 #define NOTEAMPL (float)params[noteAmpl].raw / 127
@@ -81,6 +83,8 @@ const unsigned int envelope1Release = 9;
 #define ENVELOPE1DECAY ccToMs(params[envelope1Decay].raw, MAXENVELOPETIME)
 #define ENVELOPE1SUSTAIN (float)params[envelope1Sustain].raw / 127
 #define ENVELOPE1RELEASE ccToMs(params[envelope1Release].raw, MAXENVELOPETIME)
+#define KSDECAYMIX (params[ksDecayMix].raw << 9)
+#define KSDRUMNESS (params[ksDrumness].raw)
 
 
 // Parameter memory:
@@ -91,10 +95,10 @@ Parameter params[MAXPARAMETERS] = {
 		0,
 		NULL
 	}, { // wavetype:
-		"waveType", 
-		5, 
-		114,
-		[](){ setWaveType(); }
+		"maxEnvelopeTime",
+		10,
+		91,
+		NULL
 	}, { // noteAmpl
 		"noteAmpl",
 		0,
@@ -111,10 +115,10 @@ Parameter params[MAXPARAMETERS] = {
 		7,
 		[](){ mixer1.gain(0, MIXER1GAIN0); }
 	}, {
-		"maxEnvelopeTime",
-		10,
-		91,
-		NULL
+		"waveType", 
+		5, 
+		114,
+		[](){ setWaveType(); }
 	}, {
 		"attack",
 		0,
@@ -135,6 +139,16 @@ Parameter params[MAXPARAMETERS] = {
 		10,
 		72,
 		[](){ envelope1.release(ENVELOPE1RELEASE); }
+	},{
+		"KS decay",
+		127,
+		16,
+		[](){ ks1.decayBalance(KSDECAYMIX); }
+	},{
+		"KS drum-ness",
+		64,
+		19,
+		[](){ ks1.drumness(KSDRUMNESS); }
 	}
 };
 
@@ -406,7 +420,9 @@ void OnControlChange(byte channel, byte control, byte value) {
 		//break;
 		
 		case 7: // channel volume
+		case 16: 
 		case 18: 
+		case 19: 
 		case 72:
 		case 73:
 		case 75:
@@ -455,47 +471,6 @@ void OnControlChange(byte channel, byte control, byte value) {
 			updateFilter();
 			break;
 		
-			/*
-		case 91: // something about time ... 
-			// max envelope time (multiplier for AD&R) -- from 100 to 12800
-			//MAXENVELOPETIME = (value + 1) * 100;
-			setParam(maxEnvelopeTime, value);
-			Serial.print("max envelope time: ");
-			Serial.println(MAXENVELOPETIME, DEC);
-		break;
-		
-		case 73: // attack
-			tempMs = ccToMs(value, MAXENVELOPETIME);
-			Serial.print("attack: ");
-			Serial.print(tempMs, DEC);
-			Serial.println(" ms");
-			envelope1.attack(tempMs);
-		break;
-		
-		case 75:  // decay
-			tempMs = ccToMs(value, MAXENVELOPETIME);
-			Serial.print("decay: ");
-			Serial.print(tempMs, DEC);
-			Serial.println(" ms");
-			envelope1.decay(tempMs);
-		break;
-		
-		 case 79:  // sustain
-		 Serial.print("sustain: ");
-		 Serial.print((float) value/127);
-		 Serial.println();
-		 envelope1.sustain((float) value / 127);
-		break;
-		
-		case 72:  // release
-			tempMs = ccToMs(value, MAXENVELOPETIME);
-			Serial.print("release: ");
-			Serial.print(tempMs, DEC);
-			Serial.println(" ms");
-			envelope1.release(tempMs);
-		break;
-		
-			*/
 		default: 
 			Serial.print("Control Change, ch=");
 			Serial.print(channel, DEC);
@@ -504,8 +479,8 @@ void OnControlChange(byte channel, byte control, byte value) {
 			Serial.print(", value=");
 			Serial.print(value, DEC);
 			Serial.println();
-			Serial.print("Max CPU so far:");
-			Serial.println(AudioProcessorUsageMax(), DEC);
+			//Serial.print("Max CPU so far:");
+			//Serial.println(AudioProcessorUsageMax(), DEC);
 		break; 
 			 /*      
 		case 2: bendRange = map(value, 0, 127, 1, 12); 
@@ -559,18 +534,12 @@ void setup() {
 	// Butterworth filter, 12 db/octave
 	biquad1.setLowpass(0, 800, 0.707);
 
-	// start oscilator
-	waveform1.amplitude(0);
-	waveform1.frequency(440); // not that it matters yet?
-	//waveform1.set_ramp_length(10); // ten sample ramp in/out
-	//waveform1.begin(WAVEFORM_SINE); // can this be called twice?
-	setWaveType();
-
 	pink1.amplitude(1.0);
 	ks1.clear();
 
 // beep at startup:
 	waveform1.amplitude(0.5);
+	waveform1.frequency(440); 
 	envelope1.noteOn();
 	delay(100);
 	waveform1.amplitude(0);

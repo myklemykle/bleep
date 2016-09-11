@@ -3,9 +3,9 @@
 void AudioSynthKS::update(void){
 
 	audio_block_t *block, *excitement;
-	int16_t s0, s1, s2, s3;
+	int32_t s0, s1, s2, s3;
+	int32_t acc;
 	int i;
-	int magic1;
 
 	if (!running) return;
 
@@ -28,7 +28,7 @@ void AudioSynthKS::update(void){
 
 	if (triggered) { //DEBUG
 		// read a block of input excitement (noise, or whatever you got)
-		excitement = receiveReadOnly(0); // could be null?
+		excitement = receiveReadOnly(_exciter); // could be null?
 		if (excitement == NULL) {
 			Serial.println("z"); // DEBUG
 			release(block);
@@ -51,21 +51,35 @@ void AudioSynthKS::update(void){
 			// Seems like values past 32 become insipid ... adjust exponentially.
 			//s1 = buffer[cursorMinus(buflen + 1)];
 
-			// Adding a third element creates ring-mod-type stuff, and also brings about some tremolo related to BUFSIZE.
+			// Adding a third element creates ring-mod-type stuff, and also brings about some tremolo related to _bufmax.
 			// That would be a nice effect to control ...
-			// TODO: put a knob on BUFSIZE and a knob on magic1
-			//s2 = buffer[cursorMinus(magic1)];
+			s2 = buffer[cursorMinus(_magic1)];
 			//
 			// Also: when this is a fixed value (not relative to buflen) then crazy FM-sounding shit happens ...
 			// TODO: an absolute/pitched toggle for these knob vals.
 			//s2 = buffer[cursorMinus(128)];
 
 			// average them (comb filter),
-			// place the result in the output and in the buffer.
-			block->data[i] = buffer[cursor] = ((s0 + s1) / 2); 
+			// then mix them back into the buffer (using decayBalance),
+			// and put that in the output.
+			// block->data[i] = buffer[cursor] = ((s0 + s1) / 2); 
+			// "drum variant" according to K and S? 
+			acc = ((s0 + s1) / 2) ;
+			if (random(0,128) >= _drumness) // flip a coin
+				acc = 0 - acc; // negate the samplE
+			block->data[i] = buffer[cursor] = acc;
+
+			/* workingish but parked for now?
+			block->data[i] = buffer[cursor] = (int16_t)
+				// how much of the original sample (s0) to mix?
+				(((65535 - _decayBalance) * s0)>>16)  // will be zero when decayBalance = 0xffff
+					+ 
+				// how much of the new value to mix?
+				((_decayBalance * ((s0 + s1) / 2) )>>16);  // will be zero when decayBalance = 0;
+				*/
 
 			// This ought to do the same thing, but it causes noise and crashes ... wtf?
-			//block->data[i] = buffer[cursor] = int((s0 + s1) * 0.5); 
+			//block->data[i] = buffer[cursor] = (int16_t)((s0 + s1) * 0.5); 
 
 			// Other things we could do instead:
 			// If we subtract instead of adding, the whole thing drops an octave & also sounds slightly more lowpass filtered ... 
@@ -90,7 +104,7 @@ void AudioSynthKS::update(void){
 		}
 
 		// increment cursor
-		if (++cursor == BUFSIZE) {
+		if (++cursor == _bufmax) {
 			cursor = 0;
 		}
 		if (cursor == triggerPoint) {
