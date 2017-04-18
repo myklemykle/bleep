@@ -1,4 +1,5 @@
 #include <AudioStream.h>
+#include <Wire.h>
 
 #define BUFSIZE 128*32 // probably too large ... TODO calculate the max size, for the lowest audible freq.
 

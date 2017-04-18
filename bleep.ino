@@ -1,10 +1,15 @@
-
 #include <Audio.h>
 #include <Wire.h>
 #include <EEPROM.h>
+
+// Libs that the audio library requires, but does not #include -- wtf?
+#include <SD.h> 
+#include <SPI.h> 
+#include <SerialFlash.h> 
+
+// my stuff:
 #include "AudioSynthBytebeat.h"
 #include "AudioSynthKS.h"
-
 
 // GUItool: begin automatically generated code
 AudioSynthNoisePink      pink1;          //xy=110,287   // pink noise gives a bit less aggressive bite to the notes ... 
@@ -61,7 +66,7 @@ typedef struct {
 
 // Indices of paramters (arbitrary, defined here only):
 //http://stackoverflow.com/questions/10091825/constant-pointer-vs-pointer-on-a-constant-value
-const unsigned int maxEnvelopeTime	= 5;
+const unsigned int maxEnvelopeTime	= 1; 
 const unsigned int noteAmpl 				= 2;
 const unsigned int bytebeatRecipe 	= 3;
 const unsigned int mixer1gain0    	= 4;
@@ -94,12 +99,12 @@ Parameter params[MAXPARAMETERS] = {
 		0,
 		0,
 		NULL
-	}, { // wavetype:
+	}, { 
 		"maxEnvelopeTime",
 		10,
 		91,
 		NULL
-	}, { // noteAmpl
+	}, {
 		"noteAmpl",
 		0,
 		0,
